@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plataforma Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f0f0f0;
+    }
+    header {
+      background-color: #0077cc;
+      color: white;
+      padding: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 1.8em;
+      font-weight: bold;
+    }
+    main {
+      display: flex;
+      width: 90%;
+      margin: 20px;
+    }
+    .panel, .reserva {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .panel {
+      flex: 1;
+      margin-right: 20px;
+    }
+    .reserva {
+      flex: 1;
+    }
+    h3 {
+      margin-top: 0;
+      border-bottom: 2px solid #0077cc;
+      padding-bottom: 5px;
+    }
+    select, input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    button {
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .espacio {
+      padding: 20px;
+      text-align: center;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      background-color: #ccc;
+    }
+    .disponible {
+      background-color: #ccc;
+    }
+    .reservado {
+      background-color: orange;
+    }
+    .pagado {
+      background-color: green;
+    }
+    .mensaje {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header>PLATAFORMA ADMIN</header>
+  <main>
+    <div class="panel">
+      <h3>Lugares</h3>
+      <p>Disponibles: <span id="disponibles">3</span></p>
+      <p>Ocupados: <span id="ocupados">3</span></p>
+
+      <h3>Consulta</h3>
+      <select id="consultaLugar"></select>
+      <button onclick="consultarLugar()">Consulta</button>
+      <input type="text" id="consultaCosto" placeholder="Costo" readonly>
+      <input type="text" id="consultaTiempo" placeholder="Tiempo" readonly>
+      <input type="text" id="consultaUsuario" placeholder="Usuario" readonly>
+      <button onclick="pagarLugar()">Pagar</button>
+    </div>
+
+    <div class="reserva">
+      <h3>Reservar</h3>
+      <select id="lugar"></select>
+      <input type="date" id="fecha" />
+      <input type="number" id="duracion" placeholder="Duración aproximada (horas)" />
+      <input type="text" id="usuario" placeholder="Usuario" />
+      <button onclick="confirmarReserva()">Confirmar</button>
+      <button onclick="cancelarReserva()">Cancelar</button>
+      <p class="mensaje" id="mensaje"></p>
+    </div>
+  </main>
+
+  <div class="grid" id="estacionamiento"></div>
+
+  <script>
+    const lugares = ["A1", "A2", "A3", "A4", "A5", "A6"];
+    const datos = {};
+
+    const lugarSelect = document.getElementById("lugar");
+    const consultaLugar = document.getElementById("consultaLugar");
+    const estacionamiento = document.getElementById("estacionamiento");
+    const disponiblesSpan = document.getElementById("disponibles");
+    const ocupadosSpan = document.getElementById("ocupados");
+
+    lugares.forEach((lugar) => {
+      const option = document.createElement("option");
+      option.value = lugar;
+      option.textContent = lugar;
+      lugarSelect.appendChild(option);
+
+      const option2 = option.cloneNode(true);
+      consultaLugar.appendChild(option2);
+
+      const div = document.createElement("div");
+      div.id = lugar;
+      div.className = "espacio disponible";
+      div.textContent = lugar;
+      estacionamiento.appendChild(div);
+    });
+
+    function actualizarContadores() {
+      const total = lugares.length;
+      let ocupados = 0;
+      lugares.forEach(l => {
+        if (datos[l] && (datos[l].estado === "reservado" || datos[l].estado === "pagado")) {
+          ocupados++;
+        }
+      });
+      disponiblesSpan.textContent = total - ocupados;
+      ocupadosSpan.textContent = ocupados;
+    }
+
+    function confirmarReserva() {
+      const lugar = lugarSelect.value;
+      const fecha = document.getElementById("fecha").value;
+      const duracion = document.getElementById("duracion").value;
+      const usuario = document.getElementById("usuario").value;
+      const mensaje = document.getElementById("mensaje");
+
+      if (!fecha || !duracion || !usuario) {
+        mensaje.textContent = "Todos los campos deben ser completados.";
+        mensaje.style.color = "red";
+        return;
+      }
+
+      if (datos[lugar] && (datos[lugar].estado === "reservado" || datos[lugar].estado === "pagado")) {
+        mensaje.textContent = "EL LUGAR YA ESTÁ OCUPADO/RESERVADO.";
+        mensaje.style.color = "red";
+      } else {
+        datos[lugar] = {
+          fecha,
+          duracion,
+          usuario,
+          estado: "reservado",
+          costo: `$${duracion * 10}`
+        };
+        document.getElementById(lugar).className = "espacio reservado";
+        mensaje.textContent = "LUGAR RESERVADO CON ÉXITO.";
+        mensaje.style.color = "green";
+        actualizarContadores();
+      }
+    }
+
+    function cancelarReserva() {
+      document.getElementById("fecha").value = "";
+      document.getElementById("duracion").value = "";
+      document.getElementById("usuario").value = "";
+      document.getElementById("mensaje").textContent = "";
+    }
+
+    function consultarLugar() {
+      const lugar = consultaLugar.value;
+      if (datos[lugar]) {
+        document.getElementById("consultaCosto").value = datos[lugar].estado === "pagado" ? "PAGADO" : datos[lugar].costo;
+        document.getElementById("consultaTiempo").value = `${datos[lugar].duracion} hrs`;
+        document.getElementById("consultaUsuario").value = datos[lugar].usuario;
+      } else {
+        document.getElementById("consultaCosto").value = "";
+        document.getElementById("consultaTiempo").value = "";
+        document.getElementById("consultaUsuario").value = "";
+      }
+    }
+
+    function pagarLugar() {
+      const lugar = consultaLugar.value;
+      if (datos[lugar] && datos[lugar].estado === "reservado") {
+        datos[lugar].estado = "pagado";
+        document.getElementById(lugar).className = "espacio pagado";
+        document.getElementById("consultaCosto").value = "PAGADO";
+        actualizarContadores();
+      }
+    }
+
+    actualizarContadores();
+  </script>
+</body>
+</html>
